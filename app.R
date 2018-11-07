@@ -1,38 +1,43 @@
 library(shiny)
+library(ggplot2)
 
 # Define UI for dataset viewer app ----
 ui <- fluidPage(
-    
     # App title ----
     titlePanel("Shiny Example"),
-    
-    # Sidebar layout with a input and output definitions ----
-    sidebarLayout(
-        
-        # Sidebar panel for inputs ----
-        sidebarPanel(
-            
-            # Input: Numeric entry for number of obs to view ----
-            numericInput(inputId = "alpha",
-                         label = "Alpha:",
-                         value = .05), 
-            numericInput(inputId = "power",
-                         label = "Power:",
-                         value = .95), 
-            numericInput(inputId = "sample_size",
-                         label = "Sample Size:",
-                         value = 2000)
-            
-        ),
-        
-        # Main panel for displaying outputs ----
-        mainPanel(
-            
-            # Output: HTML table with calcs ----
-            tableOutput("view")
-            
+ 
+    fluidRow(
+        column(
+            3,
+            numericInput(
+                inputId = "alpha",
+                label = "Alpha:",
+                value = .05
+            ),
+            numericInput(
+                inputId = "power",
+                label = "Power:",
+                value = .95
+            ),
+            numericInput(
+                inputId = "sample_size",
+                label = "Sample Size:",
+                value = 2000
+            )
         )
-    )
+        ,
+        column(
+            7, offset = 1,
+            plotOutput(outputId = "main_plot", height = "300px")
+        )
+    ),
+    
+    hr(),
+    
+    # Main panel for displaying outputs ----
+    mainPanel(# Output: HTML table with calcs ----
+              tableOutput("view")
+              )
 )
 
 # Define server logic to summarize and view selected dataset ----
@@ -40,7 +45,6 @@ server <- function(input, output) {
     
     # Return the requested dataset ----
     datasetInput <- reactive({
-        
         out_frame <- data.frame(initial_guess = c(0,.01,.05,.1,.25,.5,.75,.9,.95,.99,1))
         
         out_frame %>% 
@@ -52,17 +56,31 @@ server <- function(input, output) {
                     percent_report_not_sig =  1-percent_report_sig, 
                     neg_predict_rate = 1-((1-input$power) * initial_guess) / percent_report_not_sig, 
                     total_accuracy = pos_predict_rate * percent_report_sig + neg_predict_rate * percent_report_not_sig
-            ) 
+            ) ->
+            outdata
+        outdata
+        
     })
-    
-    # Generate a summary of the dataset ----
     output$view <- renderTable({
         datasetInput()
     })
     
+    output$main_plot <- renderPlot({
+        datasetInput()  %>% ## this is wrong...
+            select(initial_guess, pos_predict_rate, neg_predict_rate,
+                   total_accuracy, percent_report_sig) %>%
+            gather( var, percent, -initial_guess) ->
+            out_frame
+
+        ggplot(data=out_frame) +
+            geom_line(aes(x=initial_guess, y=percent, color=var))  +
+            labs(x = "Initial Guess About Probability that Treatment is Better (Ha=True)",
+                 y=''
+            ) +
+            theme(legend.position="bottom")
+    })
     
 }
 
 # Create Shiny app ----
 shinyApp(ui = ui, server = server)
-
