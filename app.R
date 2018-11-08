@@ -77,7 +77,8 @@ server <- function(input, output) {
             labs(x = "Initial Guess About Probability that Treatment is Better (Ha=True)",
                  y=''
             ) +
-            theme(legend.position="bottom")
+            theme(legend.position="bottom") +
+            theme_minimal()
     })
     
 }
