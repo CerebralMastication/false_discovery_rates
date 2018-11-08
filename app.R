@@ -1,5 +1,5 @@
 library(shiny)
-library(ggplot2)
+library(tidyverse)
 
 # Define UI for dataset viewer app ----
 ui <- fluidPage(
